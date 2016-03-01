@@ -9,13 +9,32 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        if (args.Length != 1)
+        if (args.Length == 0)
         {
             Console.WriteLine("Usage: gfn.exe program.gfn");
             return;
         }
 
-        var path = args[0];
+        // For each argument, check if it's a file or folder,
+        // and handle accordingly.
+        foreach (string arg in args)
+        {
+            FileAttributes fileAttr = File.GetAttributes(arg);
+
+            if ((fileAttr & FileAttributes.Directory) == FileAttributes.Directory)
+            {
+                CompileByDirectory(arg);
+            }
+            else
+            {
+                CompileByFile(arg);
+            }
+        }
+    }
+
+    // Standard compilation of a single source file.
+    private static void CompileByFile(string path)
+    {
         var moduleName = Path.GetFileNameWithoutExtension(path) + ".exe";
 
         Scanner scanner;
@@ -29,5 +48,11 @@ internal static class Program
         var codeGen = new CodeGen(parser.Result, moduleName);
         codeGen.Compile();
         Console.WriteLine("Successfully compiled to " + moduleName);
+    }
+
+    // A new compilation method, all project sources packaged into
+    // a single folder, then bulk-compiled.
+    private static void CompileByDirectory(string path)
+    {
     }
 }
