@@ -58,6 +58,8 @@
   <ItemGroup>
     <Compile Include="Ast.cs" />
     <Compile Include="CodeGen.cs" />
+    <Compile Include="GfnStdLib.cs" />
+    <Compile Include="Language.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -2,57 +2,69 @@
 // The original code was published with an article at https://msdn.microsoft.com/en-us/magazine/cc136756.aspx by Joel Pobar.
 // The original terms were specified at http://www.microsoft.com/info/cpyright.htm but that page is long dead :)
 
-using System;
-using System.IO;
-
-internal static class Program
+namespace GfnCompiler
 {
-    private static void Main(string[] args)
+    internal static class Program
     {
-        if (args.Length == 0)
+        private static void Main(string[] args)
         {
-            Console.WriteLine("Usage: gfn.exe program.gfn");
-            return;
-        }
-
-        // For each argument, check if it's a file or folder,
-        // and handle accordingly.
-        foreach (string arg in args)
-        {
-            FileAttributes fileAttr = File.GetAttributes(arg);
-
-            if ((fileAttr & FileAttributes.Directory) == FileAttributes.Directory)
+            if (args.Length == 0)
             {
-                CompileByDirectory(arg);
+                System.Console.WriteLine("Command Line Usage: gfn.exe <file_name.gfn | directory_name>");
+                return;
             }
-            else
+
+            // For each argument, check if it's a file or folder,
+            // and handle accordingly.
+            foreach (string arg in args)
             {
-                CompileByFile(arg);
+                System.IO.FileAttributes fileAttr = System.IO.File.GetAttributes(arg);
+
+                if ((fileAttr & System.IO.FileAttributes.Directory) == System.IO.FileAttributes.Directory)
+                {
+                    CompileByDirectory(arg);
+                }
+                else
+                {
+                    // Not necessarily a file.
+                    CompileByFile(arg);
+                }
             }
+
+            // End-of-compilation output.
+            System.Console.WriteLine("Press ANY key to continue.");
+            System.Console.ReadLine();
         }
-    }
 
-    // Standard compilation of a single source file.
-    private static void CompileByFile(string path)
-    {
-        var moduleName = Path.GetFileNameWithoutExtension(path) + ".exe";
-
-        Scanner scanner;
-        using (TextReader input = File.OpenText(path))
+        // Standard compilation of a single source file.
+        private static void CompileByFile(string path)
         {
-            scanner = new Scanner(input);
+            // Store the soon-to-be .exe file name.
+            var moduleName = System.IO.Path.GetFileNameWithoutExtension(path) + ".exe";
+
+            Scanner scanner;
+
+            using (System.IO.TextReader inputSourceFile = System.IO.File.OpenText(path))
+            {
+                scanner = new Scanner(inputSourceFile);
+            }
+
+            Parser parser = new Parser(scanner.GetTokens());
+            parser.Parse();
+
+            CodeGenerator codeGenerator = new CodeGenerator(parser.GetResult(), moduleName);
+            codeGenerator.Compile();
+
+            // Compilation done. Let 'em know.
+            System.Console.WriteLine("Compiled source to: " + moduleName);
         }
-        var parser = new Parser(scanner.Tokens);
-        parser.Parse();
 
-        var codeGen = new CodeGen(parser.Result, moduleName);
-        codeGen.Compile();
-        Console.WriteLine("Successfully compiled to " + moduleName);
-    }
-
-    // A new compilation method, all project sources packaged into
-    // a single folder, then bulk-compiled.
-    private static void CompileByDirectory(string path)
-    {
+        // A new compilation method, all project sources packaged into
+        // a single folder, then bulk-compiled.
+        private static void CompileByDirectory(string path)
+        {
+            // 1) Locate & Read "Build.txt" file.
+            // 3) Compile each source file one by one starting with "Main.gfn"
+        }
     }
 }

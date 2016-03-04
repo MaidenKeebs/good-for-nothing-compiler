@@ -1,15 +1,33 @@
+<statement> := <data_type> <identifier> = <expression>;
+
+<data_type> := integer
+	| float
+	| string
+	| boolean
+
+<identifier> := <char>+
+
+<expression> := <string_literal>
+	| <integer>
+	| <identifier>
+	| <binary_expression>
+
+###############################################################################
 <stmt> := var <ident> = <expr>
 	| <ident> = <expr>
 	| for <ident> = <expr> to <expr> do <stmt> end
 	| read_int <ident>
 	| read_string <ident>
 	| print <expr>
+	| call <ident> ( <parameter> [, <parameter>]* )
 	| <stmt> ; <stmt>
 
 <expr> := <string>
 	| <int>
 	| <bin_expr>
 	| <ident>
+
+<parameter> := <string> | <int> | <ident>
 
 <arith_expr> := <expr> <arith_op> <expr>
 <arith_op> := + | - | * | /

@@ -1,170 +1,174 @@
-using System;
-using System.IO;
-using System.Text;
-using Collections = System.Collections.Generic;
-
-public sealed class Scanner
+namespace GfnCompiler
 {
-    public enum ArithToken
+    // Basic container for storing read-in tokens.
+    public struct TokenData
     {
-        Add,
-        Sub,
-        Mul,
-        Div,
-        Semi,
-        Equal,
-    }
+        public int lineNumber;
+        public int charPosition;
+        public object data;
 
-    private readonly Collections.IList<object> _result;
-
-    public Scanner(TextReader input)
-    {
-        _result = new Collections.List<object>();
-        Scan(input);
-    }
-
-    public Collections.IList<object> Tokens
-    {
-        get { return _result; }
-    }
-
-    private void Scan(TextReader input)
-    {
-        while (input.Peek() != -1)
+        public TokenData(int lineNumber, int charPosition, object data)
         {
-            var ch = (char)input.Peek();
-
-            if (char.IsWhiteSpace(ch))
-            {
-                // eat the current char and skip ahead!
-                input.Read();
-            }
-            else if (char.IsLetter(ch) || ch == '_')
-            {
-                // keyword or identifier
-                ScanIdent(input, ch);
-            }
-            else if (ch == '"')
-            {
-                // string literal
-                ScanString(input);
-            }
-            else if (char.IsDigit(ch))
-            {
-                // numeric literal
-                ScanNumber(input, ch);
-            }
-            else if (ch == ';')
-            {
-                // end of statement
-                ScanSemi(input);
-            }
-            else
-            {
-                // arithmetic tokens such as + - / * =
-                ScanArith(input, ch);
-            }
+            this.lineNumber = lineNumber;
+            this.charPosition = charPosition;
+            this.data = data;
         }
     }
 
-    private void ScanArith(TextReader input, char ch)
+    public sealed class Scanner
     {
-        switch (ch)
+        private readonly System.Collections.Generic.IList<TokenData> m_tokens;
+        private System.IO.TextReader m_inputSourceFile;
+        private char m_currentFileChar;
+        private int m_currentFileLineNumber;
+        private int m_currentFileCharPosition;
+
+        public Scanner(System.IO.TextReader inputSourceFile)
         {
-            case '+':
-                input.Read();
-                _result.Add(ArithToken.Add);
-                break;
-            case '-':
-                input.Read();
-                _result.Add(ArithToken.Sub);
-                break;
-            case '*':
-                input.Read();
-                _result.Add(ArithToken.Mul);
-                break;
-            case '/':
-                input.Read();
-                _result.Add(ArithToken.Div);
-                break;
-            case '=':
-                input.Read();
-                _result.Add(ArithToken.Equal);
-                break;
-            default:
-                throw new Exception("Scanner encountered unrecognized character '" + ch + "'");
-        }
-    }
+            m_tokens = new System.Collections.Generic.List<TokenData>();
+            m_inputSourceFile = inputSourceFile;
+            m_currentFileLineNumber = 1;
+            m_currentFileCharPosition = 0;
 
-    private void ScanSemi(TextReader input)
-    {
-        input.Read();
-        _result.Add(ArithToken.Semi);
-    }
+            Scan();
 
-    private void ScanNumber(TextReader input, char ch)
-    {
-        var accum = new StringBuilder();
-
-        while (char.IsDigit(ch))
-        {
-            accum.Append(ch);
-            input.Read();
-
-            if (input.Peek() == -1)
+            // Just a tad of debugging.
+            foreach (TokenData token in m_tokens)
             {
-                break;
-            }
-            ch = (char)input.Peek();
-        }
-
-        _result.Add(int.Parse(accum.ToString()));
-    }
-
-    private void ScanString(TextReader input)
-    {
-        char ch;
-        var accum = new StringBuilder();
-
-        input.Read(); // skip the '"'
-
-        if (input.Peek() == -1)
-        {
-            throw new Exception("unterminated string literal");
-        }
-
-        while ((ch = (char)input.Peek()) != '"')
-        {
-            accum.Append(ch);
-            input.Read();
-
-            if (input.Peek() == -1)
-            {
-                throw new Exception("unterminated string literal");
+                System.Console.WriteLine("Line: {0}\tPosition: {1}\tData: {2}", token.lineNumber, token.charPosition, token.data.ToString());
             }
         }
 
-        // skip the terminating "
-        input.Read();
-        _result.Add(accum);
-    }
-
-    private void ScanIdent(TextReader input, char ch)
-    {
-        var accum = new StringBuilder();
-
-        while (char.IsLetter(ch) || ch == '_')
+        public System.Collections.Generic.IList<TokenData> GetTokens()
         {
-            accum.Append(ch);
-            input.Read();
-
-            if (input.Peek() == -1)
-            {
-                break;
-            }
-            ch = (char)input.Peek();
+            return m_tokens;
         }
 
-        _result.Add(accum.ToString());
+        private int PeekNextToken()
+        {
+            // Don't hate me for this function.
+            m_currentFileChar = (char)m_inputSourceFile.Peek();
+            return (int)m_currentFileChar;
+        }
+
+        private void ReadNextToken()
+        {
+            m_inputSourceFile.Read();
+            m_currentFileCharPosition += 1;
+        }
+
+        private char CurrentToken()
+        {
+            return m_currentFileChar;
+        }
+
+        private bool EndOfFile()
+        {
+            return m_inputSourceFile.Peek() == -1;
+        }
+
+        private void Scan()
+        {
+            while (m_inputSourceFile.Peek() != -1)
+            {
+                PeekNextToken();
+
+                if (System.Char.IsWhiteSpace(CurrentToken()))
+                {
+                    ScanWhiteSpace();
+                }
+                else if (System.Char.IsLetter(CurrentToken()))
+                {
+                    ScanKeywordOrIdentifier();
+                }
+                else if (System.Char.IsDigit(CurrentToken()))
+                {
+                    ScanNumber();
+                }
+                else
+                {
+                    ScanSpecialCharacter();
+                }
+            }
+        }
+
+        private void ScanWhiteSpace()
+        {
+            if (CurrentToken().Equals('\n'))
+            {
+                m_currentFileLineNumber += 1;
+                m_currentFileCharPosition = 0;
+            }
+
+            m_inputSourceFile.Read();
+        }
+
+        private void ScanKeywordOrIdentifier()
+        {
+            System.Text.StringBuilder token = new System.Text.StringBuilder();
+
+            int lineNumber = m_currentFileLineNumber;
+            int charPosition = m_currentFileCharPosition;
+
+            while (System.Char.IsLetter(CurrentToken()))
+            {
+                token.Append(CurrentToken());
+                ReadNextToken();
+
+                if (EndOfFile())
+                {
+                    break;
+                }
+
+                PeekNextToken();
+            }
+
+            m_tokens.Add(new TokenData(lineNumber, charPosition, token.ToString()));
+        }
+
+        private void ScanNumber()
+        {
+            System.Text.StringBuilder token = new System.Text.StringBuilder();
+
+            int lineNumber = m_currentFileLineNumber;
+            int charPosition = m_currentFileCharPosition;
+
+            while (System.Char.IsDigit(CurrentToken()))
+            {
+                token.Append(CurrentToken());
+                ReadNextToken();
+
+                if (EndOfFile())
+                {
+                    break;
+                }
+
+                PeekNextToken();
+            }
+
+            m_tokens.Add(new TokenData(lineNumber, charPosition, System.Int32.Parse(token.ToString())));
+        }
+
+        private void ScanSpecialCharacter()
+        {
+            bool foundMatch = false;
+
+            foreach (System.Collections.Generic.KeyValuePair<char, Language.SpecialCharacter> pair in Language.specialCharacters)
+            {
+                if (CurrentToken().Equals(pair.Key))
+                {
+                    foundMatch = true;
+
+                    m_tokens.Add(new TokenData(m_currentFileLineNumber, m_currentFileCharPosition, pair.Value));
+                    ReadNextToken();
+                }
+            }
+
+            // By this point, if there's no match, we've got a problem.
+            if (!foundMatch)
+            {
+                throw new System.Exception("Unknown token found: " + CurrentToken());
+            }
+        }
     }
 }
