@@ -46,12 +46,14 @@ namespace GfnCompiler
         public string module; // Not always applicable.
         public string identifier;
         public string parameter;
+        public System.Collections.Generic.IList<string> parameters;
 
-        public FunctionCall(string module, string identifier, string parameter)
+        public FunctionCall(string module, string identifier, string parameter, System.Collections.Generic.List<string> parameters)
         {
             this.module = module;
             this.identifier = identifier;
             this.parameter = parameter;
+            this.parameters = parameters;
         }
     }
 

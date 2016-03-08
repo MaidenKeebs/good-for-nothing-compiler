@@ -58,7 +58,7 @@ namespace GfnCompiler
             {
                 throw new System.Exception("Expected a statement, but reached end-of-file.");
             }
-            
+
             if (CurrentToken().data is string && Language.dataTypes.ContainsValue(CurrentToken().data.ToString()))
             {
                 ///////////////////////////////////////////
@@ -77,6 +77,7 @@ namespace GfnCompiler
                 string module = System.String.Empty;
                 string identifier = System.String.Empty;
                 string parameter = System.String.Empty;
+                System.Collections.Generic.List<string> parameters = new System.Collections.Generic.List<string>();
 
                 if (PeekNextToken().data.Equals(Language.SpecialCharacter.Colon))
                 {
@@ -94,7 +95,8 @@ namespace GfnCompiler
 
                     if (!CurrentToken().data.Equals(Language.SpecialCharacter.LeftParenthesis))
                     {
-                        throw new System.Exception("Expected ( on function call.");
+                        throw new System.Exception(System.String.Format("Expected ) on function call. <A> but got {0}, {1}, {2}",
+                            CurrentToken().data.ToString(), CurrentToken().lineNumber, CurrentToken().charPosition));
                     }
 
                     // Over the (
@@ -102,15 +104,32 @@ namespace GfnCompiler
 
                     if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
                     {
-                        // Get parameter.
-                        parameter = CurrentToken().data.ToString();
-
+                        // Add the first parameter.
+                        parameters.Add(CurrentToken().data.ToString());
                         NextToken();
+
+                        System.Console.WriteLine("PRE-PRICK");
+                        // Check for any more parameters.
+                        while (CurrentToken().data.Equals(Language.SpecialCharacter.Comma))
+                        {
+                            // Over comma.
+                            NextToken();
+                            // While the next token's a comma, keep parsing parameters.
+                            parameters.Add(CurrentToken().data.ToString());
+
+                            if (PeekNextToken().Equals(Language.SpecialCharacter.RightParenthesis))
+                            {
+                                break;
+                            }
+
+                            NextToken();
+                        }
                     }
 
                     if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
                     {
-                        throw new System.Exception("Expected ) on function call. <A>");
+                        throw new System.Exception(System.String.Format("Expected ) on function call. <B> but got {0}, {1}, {2}",
+                            CurrentToken().data.ToString(), CurrentToken().lineNumber, CurrentToken().charPosition));
                     }
                 }
                 else
@@ -127,10 +146,22 @@ namespace GfnCompiler
                     // Over the (
                     NextToken();
 
-                    // Get parameter.
-                    parameter = CurrentToken().data.ToString();
+                    if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
+                    {
+                        // Get parameter.
+                        parameters.Add(CurrentToken().data.ToString());
 
-                    NextToken();
+                        while (PeekNextToken().Equals(Language.SpecialCharacter.Comma))
+                        {
+                            // Skip the comma.
+                            NextToken();
+
+                            // Get the param.
+                            parameters.Add(CurrentToken().data.ToString());
+                        }
+
+                        NextToken();
+                    }
 
                     if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
                     {
@@ -138,7 +169,7 @@ namespace GfnCompiler
                     }
                 }
 
-                result = new FunctionCall(module, identifier, parameter);
+                result = new FunctionCall(module, identifier, parameter, parameters);
             }
             else
             {

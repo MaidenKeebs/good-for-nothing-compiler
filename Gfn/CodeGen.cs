@@ -83,7 +83,25 @@ namespace GfnCompiler
 
                 if (functionCall.module != System.String.Empty)
                 {
-                    if (functionCall.parameter != System.String.Empty)
+                    if (functionCall.parameters.Count > 0)
+                    {
+                        foreach (string parameter in functionCall.parameters)
+                        {
+                            System.Console.WriteLine("!-!-! CodeGen <A> {0}", parameter);
+                            m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, parameter);
+                        }
+
+                        System.Type[] typeList = new System.Type[functionCall.parameters.Count];
+                        for (int i = 0; i < typeList.Length; ++i)
+                        {
+                            typeList[i] = typeof(string);
+                        }
+
+                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnStdLib.IO).GetMethod(functionCall.identifier,
+                        typeList));
+
+                    }
+                    /*if (functionCall.parameter != System.String.Empty)
                     {
                         System.Console.WriteLine("!-!-! CodeGen <A> {0}", functionCall.parameter);
                         m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, functionCall.parameter);
@@ -95,7 +113,7 @@ namespace GfnCompiler
                     {
                         System.Console.WriteLine("!-!-! CodeGen <B> NO_PARAM");
                         m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnStdLib.IO).GetMethod(functionCall.identifier));
-                    }
+                    }*/
                 }
                 else
                 {
