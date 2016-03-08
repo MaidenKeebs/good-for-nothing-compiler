@@ -27,6 +27,11 @@ namespace GfnCompiler
             ++m_index;
         }
 
+        private TokenData PeekNextToken()
+        {
+            return m_tokens[m_index + 1];
+        }
+
         private TokenData CurrentToken()
         {
             return m_tokens[m_index];
@@ -53,10 +58,87 @@ namespace GfnCompiler
             {
                 throw new System.Exception("Expected a statement, but reached end-of-file.");
             }
-
-            if (CurrentToken().data is string && Language.dataTypes.Contains(CurrentToken().data.ToString()))
+            
+            if (CurrentToken().data is string && Language.dataTypes.ContainsValue(CurrentToken().data.ToString()))
             {
+                ///////////////////////////////////////////
+                // <data_type> <identifier> = <expression>;
+
                 result = ParseVariableCreation();
+            }
+            else if (CurrentToken().data.Equals(Language.SpecialCharacter.FunctionPrefix))
+            {
+                //////////////////////////////////////////////////////////
+                // @<module>:<function_name>(<parameter>[, <parameter>]*);
+
+                // Skip over the @ character.
+                NextToken();
+
+                string module = System.String.Empty;
+                string identifier = System.String.Empty;
+                string parameter = System.String.Empty;
+
+                if (PeekNextToken().data.Equals(Language.SpecialCharacter.Colon))
+                {
+                    // We're using a function from the GfnStdLib.
+                    module = CurrentToken().data.ToString();
+
+                    // On to the colon.
+                    NextToken();
+                    // Now skip it.
+                    NextToken();
+
+                    identifier = CurrentToken().data.ToString();
+
+                    NextToken();
+
+                    if (!CurrentToken().data.Equals(Language.SpecialCharacter.LeftParenthesis))
+                    {
+                        throw new System.Exception("Expected ( on function call.");
+                    }
+
+                    // Over the (
+                    NextToken();
+
+                    if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
+                    {
+                        // Get parameter.
+                        parameter = CurrentToken().data.ToString();
+
+                        NextToken();
+                    }
+
+                    if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
+                    {
+                        throw new System.Exception("Expected ) on function call. <A>");
+                    }
+                }
+                else
+                {
+                    identifier = CurrentToken().data.ToString();
+
+                    NextToken();
+
+                    if (!CurrentToken().data.Equals(Language.SpecialCharacter.LeftParenthesis))
+                    {
+                        throw new System.Exception("Expected ( on function call. <B>");
+                    }
+
+                    // Over the (
+                    NextToken();
+
+                    // Get parameter.
+                    parameter = CurrentToken().data.ToString();
+
+                    NextToken();
+
+                    if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
+                    {
+                        throw new System.Exception("Expected ) on function call.");
+                    }
+                }
+
+                result = new FunctionCall(module, identifier, parameter);
             }
             else
             {
@@ -77,7 +159,8 @@ namespace GfnCompiler
             }
             else
             {
-                throw new System.Exception("Expected SemiColon!!!");
+                throw new System.Exception(System.String.Format("Expected SemiColon: line {0}, position {1}",
+                    CurrentToken().lineNumber.ToString(), CurrentToken().charPosition.ToString()));
             }
 
             // Nothing left to parse.
@@ -113,9 +196,24 @@ namespace GfnCompiler
 
             NextToken();
 
-            IntegerLiteral expression = new IntegerLiteral(System.Int32.Parse(CurrentToken().data.ToString()));
+            // Rewrite this to be more flexible and less hard-coded - MaidenKeebs
+            switch (dataType)
+            {
+                case "integer":
+                    IntegerLiteral integerLiteral = new IntegerLiteral(System.Int32.Parse(CurrentToken().data.ToString()));
+                    return new VariableCreation(identifier, integerLiteral);
 
-            return new VariableCreation(identifier, expression);
+                case "string":
+                    StringLiteral stringLiteral = new StringLiteral(CurrentToken().data.ToString());
+                    return new VariableCreation(identifier, stringLiteral);
+
+                case "boolean":
+                    BooleanLiteral booleanLiteral = new BooleanLiteral(System.Boolean.Parse(CurrentToken().data.ToString()));
+                    return new VariableCreation(identifier, booleanLiteral);
+
+                default:
+                    throw new System.Exception("Unknown thingy... <best error handling ever, not>");
+            }
         }
     }
 }

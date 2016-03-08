@@ -1,16 +1,24 @@
-<statement> := <data_type> <identifier> = <expression>;
+<statement> := <variable_creation>
+	| <variable_assignment>
+	| <function_call>
 
-<data_type> := integer
-	| float
-	| string
-	| boolean
+<variable_creation> := <data_type> <identifier> = <expression>
+<variable_assignment> := <identifier> = <expression>
+<function_call> := <stdlib_function_call> | <user_defined_function_call>
+
+<stdlib_function_call> := @<module>:<identifer>(<parameter>[, <parameter>]*)
+<user_defined_function_call> := @identifier(<parameter>[, <parameter>]*)
+
+<data_type> := integer | string | boolean
+
+<expression> := <identifier> | <integer_literal>+ | <string_literal>
 
 <identifier> := <char>+
+<integer_literal> := 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+<string_literal> := "<character_literal>*"
 
-<expression> := <string_literal>
-	| <integer>
-	| <identifier>
-	| <binary_expression>
+<character_ltieral> := 'a..z | A..Z | 0..9 | <special_character_literal>'
+<special_character_literal> := (anything but a " mark)
 
 ###############################################################################
 <stmt> := var <ident> = <expr>

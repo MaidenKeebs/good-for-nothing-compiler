@@ -75,6 +75,37 @@ namespace GfnCompiler
                 GenerateLoadToStackForExpression(variableAssignment.expression, variableAssignment.expression.GetType());
                 GenerateStoreFromStack(variableAssignment.identifier, variableAssignment.expression.GetType());
             }
+            else if (statement is FunctionCall)
+            {
+                System.Console.WriteLine("Generating: FunctionCall");
+
+                FunctionCall functionCall = (FunctionCall)statement;
+
+                if (functionCall.module != System.String.Empty)
+                {
+                    if (functionCall.parameter != System.String.Empty)
+                    {
+                        System.Console.WriteLine("!-!-! CodeGen <A> {0}", functionCall.parameter);
+                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, functionCall.parameter);
+
+                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnStdLib.IO).GetMethod(functionCall.identifier,
+                        new System.Type[] { typeof(string) }));
+                    }
+                    else
+                    {
+                        System.Console.WriteLine("!-!-! CodeGen <B> NO_PARAM");
+                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnStdLib.IO).GetMethod(functionCall.identifier));
+                    }
+                }
+                else
+                {
+                    // Basically the same as above, but doesn't run from the GfnStdLib.
+                    // This will be eventually used for user-defined functions.
+                    m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, functionCall.parameter);
+                    m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnCompiler.NoModule).GetMethod(functionCall.identifier,
+                        new System.Type[] { typeof(string) }));
+                }
+            }
             else
             {
                 throw new System.Exception("Unable to generator a: " + statement.GetType().Name);
@@ -93,6 +124,30 @@ namespace GfnCompiler
                 deliveredType = typeof(int);
 
                 m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldc_I4, integerLiteral.value);
+            }
+            else if (expression is StringLiteral)
+            {
+                StringLiteral stringLiteral = (StringLiteral)expression;
+
+                deliveredType = typeof(string);
+
+                m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, stringLiteral.value);
+            }
+            else if (expression is BooleanLiteral)
+            {
+                BooleanLiteral booleanLiteral = (BooleanLiteral)expression;
+
+                deliveredType = typeof(bool);
+
+                // Generate either 1 or 0 to represent boolean values.
+                if (booleanLiteral.value == true)
+                {
+                    m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldc_I4_1);
+                }
+                else
+                {
+                    m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldc_I4_0);
+                }
             }
             else
             {

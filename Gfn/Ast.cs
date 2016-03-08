@@ -41,6 +41,20 @@ namespace GfnCompiler
         }
     }
 
+    public class FunctionCall : Statement
+    {
+        public string module; // Not always applicable.
+        public string identifier;
+        public string parameter;
+
+        public FunctionCall(string module, string identifier, string parameter)
+        {
+            this.module = module;
+            this.identifier = identifier;
+            this.parameter = parameter;
+        }
+    }
+
     public abstract class Expression
     {
     }
@@ -50,6 +64,26 @@ namespace GfnCompiler
         public int value;
 
         public IntegerLiteral(int value)
+        {
+            this.value = value;
+        }
+    }
+
+    public class StringLiteral : Expression
+    {
+        public string value;
+
+        public StringLiteral(string value)
+        {
+            this.value = value;
+        }
+    }
+
+    public class BooleanLiteral : Expression
+    {
+        public bool value;
+
+        public BooleanLiteral(bool value)
         {
             this.value = value;
         }

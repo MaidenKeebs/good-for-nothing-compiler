@@ -57,6 +57,13 @@ namespace GfnCompiler
             m_currentFileCharPosition += 1;
         }
 
+        private void ReadToNextLine()
+        {
+            m_inputSourceFile.ReadLine();
+            m_currentFileLineNumber += 1;
+            m_currentFileCharPosition = 0;
+        }
+
         private char CurrentToken()
         {
             return m_currentFileChar;
@@ -84,6 +91,14 @@ namespace GfnCompiler
                 else if (System.Char.IsDigit(CurrentToken()))
                 {
                     ScanNumber();
+                }
+                else if (CurrentToken().Equals('"'))
+                {
+                    ScanStringLiteral();
+                }
+                else if (CurrentToken().Equals(Language.SINGLE_LINE_COMMENT))
+                {
+                    ReadToNextLine();
                 }
                 else
                 {
@@ -149,6 +164,38 @@ namespace GfnCompiler
             m_tokens.Add(new TokenData(lineNumber, charPosition, System.Int32.Parse(token.ToString())));
         }
 
+        private void ScanStringLiteral()
+        {
+            System.Text.StringBuilder token = new System.Text.StringBuilder();
+
+            int lineNumber = m_currentFileLineNumber;
+            int charPosition = m_currentFileCharPosition;
+
+            // Skip the initial '"'.
+            ReadNextToken();
+
+            if (EndOfFile())
+            {
+                throw new System.Exception("Unterminated string literal due to end-of-file. (A)");
+            }
+
+            while (PeekNextToken() != '"')
+            {
+                token.Append(CurrentToken());
+                ReadNextToken();
+
+                if (EndOfFile())
+                {
+                    throw new System.Exception("Unterminated string literal due to end-of-file.(B)");
+                }
+            }
+
+            // Skip the second '"'.
+            ReadNextToken();
+
+            m_tokens.Add(new TokenData(lineNumber, charPosition, token));
+        }
+
         private void ScanSpecialCharacter()
         {
             bool foundMatch = false;
@@ -167,7 +214,8 @@ namespace GfnCompiler
             // By this point, if there's no match, we've got a problem.
             if (!foundMatch)
             {
-                throw new System.Exception("Unknown token found: " + CurrentToken());
+                throw new System.Exception(System.String.Format("Unknown token '{0} found one line {1} and position {2}",
+                    CurrentToken(), m_currentFileLineNumber, m_currentFileCharPosition));
             }
         }
     }
