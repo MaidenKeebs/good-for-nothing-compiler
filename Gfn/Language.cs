@@ -12,6 +12,7 @@
             Colon,
             SemiColon,
             Comma,
+            UnderScore,
             // Function call prefix.
             FunctionPrefix,
             // Braces.
@@ -22,7 +23,8 @@
         public static System.Collections.Generic.Dictionary<string, string> dataTypes =
             new System.Collections.Generic.Dictionary<string, string>()
         {
-                { "INT_32", "integer" },
+                { "INT_32", "integer32" },
+                { "INT_64", "integer64" },
                 { "STRING", "string" },
                 { "BOOLEAN", "boolean" }
         };
@@ -36,6 +38,7 @@
                 { ':', Language.SpecialCharacter.Colon },
                 { ';', Language.SpecialCharacter.SemiColon },
                 { ',', Language.SpecialCharacter.Comma },
+                { '_', Language.SpecialCharacter.UnderScore },
                 // Function call prefix.
                 { '@', Language.SpecialCharacter.FunctionPrefix },
                 // Braces.

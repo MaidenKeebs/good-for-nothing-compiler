@@ -6,11 +6,14 @@
  ***/
 namespace GfnCompiler
 {
+    // This is just a placeholder for user-defined functions.
+    // Just making sure the user-defined function call syntax works.
+    // @<identifier>(<parameter>*[,<parameter>]*);
     public sealed class NoModule
     {
         public static void NoModulePrint(string text)
         {
-            System.Console.WriteLine("NMP -> {0}", text);
+            System.Console.WriteLine(System.String.Format("NMP -> {0}", text));
         }
     }
 
@@ -22,6 +25,11 @@ namespace GfnCompiler
             public static void Print(string text)
             {
                 System.Console.WriteLine(System.String.Format("IO:Print -> {0}", text));
+            }
+
+            public static void PrintTwoThings(string a, string b)
+            {
+                System.Console.WriteLine(System.String.Format("IO:Print -> {0}, {1}", a, b));
             }
 
             public static void PrintThree(string text1, string text2, string text3)

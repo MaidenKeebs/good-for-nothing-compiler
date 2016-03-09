@@ -1,3 +1,7 @@
+// TODO-MaidenKeebs:
+//     Re-implement the char position code because it isn't
+//     always accurate, sorry.
+
 namespace GfnCompiler
 {
     // Basic container for storing read-in tokens.
@@ -32,10 +36,9 @@ namespace GfnCompiler
 
             Scan();
 
-            // Just a tad of debugging.
             foreach (TokenData token in m_tokens)
             {
-                System.Console.WriteLine("Line: {0}\tPosition: {1}\tData: {2}", token.lineNumber, token.charPosition, token.data.ToString());
+                GfnDebug.Print(GfnDebug.Origin.GFN_SCANNER.ToString(), "Token: {0}", token.data.ToString());
             }
         }
 
@@ -46,7 +49,6 @@ namespace GfnCompiler
 
         private int PeekNextToken()
         {
-            // Don't hate me for this function.
             m_currentFileChar = (char)m_inputSourceFile.Peek();
             return (int)m_currentFileChar;
         }
@@ -125,7 +127,7 @@ namespace GfnCompiler
             int lineNumber = m_currentFileLineNumber;
             int charPosition = m_currentFileCharPosition;
 
-            while (System.Char.IsLetter(CurrentToken()))
+            while (System.Char.IsLetter(CurrentToken()) || System.Char.IsDigit(CurrentToken()) || CurrentToken().Equals('_'))
             {
                 token.Append(CurrentToken());
                 ReadNextToken();
@@ -211,11 +213,10 @@ namespace GfnCompiler
                 }
             }
 
-            // By this point, if there's no match, we've got a problem.
             if (!foundMatch)
             {
-                throw new System.Exception(System.String.Format("Unknown token '{0} found one line {1} and position {2}",
-                    CurrentToken(), m_currentFileLineNumber, m_currentFileCharPosition));
+                GfnDebug.ThrowException(GfnDebug.Origin.GFN_SCANNER.ToString(),
+                    "Encountered an unknown token on line '{0}' at position '{1}'.", m_currentFileLineNumber, m_currentFileCharPosition);
             }
         }
     }

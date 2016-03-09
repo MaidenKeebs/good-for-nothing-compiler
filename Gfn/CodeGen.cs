@@ -2,6 +2,7 @@ namespace GfnCompiler
 {
     public sealed class CodeGenerator
     {
+        // Comment This - MaidenKeebs
         private readonly System.Reflection.Emit.AssemblyBuilder m_assemblyBuilder;
         private readonly System.Reflection.Emit.ILGenerator m_ilGenerator;
         private readonly System.Reflection.Emit.MethodBuilder m_methodBuilder;
@@ -16,13 +17,13 @@ namespace GfnCompiler
             m_statement = statement;
             m_moduleName = moduleName;
 
-            // Just making sure moduleName is directed to current directory, that's all.
+            // Just making sure moduleName is directed to current directory, that's all - MaidenKeebs
             if (System.IO.Path.GetFileName(moduleName) != moduleName)
             {
                 throw new System.Exception("CodeGenerator: Can only output binary to current directory, sorry.");
             }
 
-            // Comment this shit later. No, seriously.
+            // Comment this shit later. No, seriously - MaidenKeebs
             string fileName = System.IO.Path.GetFileNameWithoutExtension(moduleName);
             System.Reflection.AssemblyName assemblyName = new System.Reflection.AssemblyName(fileName);
             m_assemblyBuilder = System.AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Save);
@@ -35,6 +36,7 @@ namespace GfnCompiler
 
         public void Compile()
         {
+            // Comment this - MaidenKeebs
             GenerateStatement(m_statement);
 
             m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ret);
@@ -48,7 +50,7 @@ namespace GfnCompiler
         {
             if (statement is StatementSequence)
             {
-                System.Console.WriteLine("Generating: StatementSequence");
+                //System.Console.WriteLine("Generating: StatementSequence");
                 StatementSequence statementSequence = (StatementSequence)statement;
 
                 GenerateStatement(statementSequence.first);
@@ -56,7 +58,7 @@ namespace GfnCompiler
             }
             else if (statement is VariableCreation)
             {
-                System.Console.WriteLine("Generating: VariableCreation");
+                //System.Console.WriteLine("Generating: VariableCreation");
                 VariableCreation variableCreation = (VariableCreation)statement;
 
                 // Declare the variable.
@@ -68,7 +70,7 @@ namespace GfnCompiler
             }
             else if (statement is VariableAssignment)
             {
-                System.Console.WriteLine("Generating: VariableAssignment");
+                //System.Console.WriteLine("Generating: VariableAssignment");
                 VariableAssignment variableAssignment = (VariableAssignment)statement;
 
                 // I'm not going to pretend to know what these do. Just let it be - MaidenKeebs
@@ -77,7 +79,7 @@ namespace GfnCompiler
             }
             else if (statement is FunctionCall)
             {
-                System.Console.WriteLine("Generating: FunctionCall");
+                //System.Console.WriteLine("Generating: FunctionCall {0}", ((FunctionCall)statement).identifier);
 
                 FunctionCall functionCall = (FunctionCall)statement;
 
@@ -87,7 +89,7 @@ namespace GfnCompiler
                     {
                         foreach (string parameter in functionCall.parameters)
                         {
-                            System.Console.WriteLine("!-!-! CodeGen <A> {0}", parameter);
+                            //System.Console.WriteLine("!-!-! CodeGen <A> {0}", parameter);
                             m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, parameter);
                         }
 
@@ -101,27 +103,39 @@ namespace GfnCompiler
                         typeList));
 
                     }
-                    /*if (functionCall.parameter != System.String.Empty)
-                    {
-                        System.Console.WriteLine("!-!-! CodeGen <A> {0}", functionCall.parameter);
-                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, functionCall.parameter);
-
-                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnStdLib.IO).GetMethod(functionCall.identifier,
-                        new System.Type[] { typeof(string) }));
-                    }
                     else
                     {
-                        System.Console.WriteLine("!-!-! CodeGen <B> NO_PARAM");
+                        // Parameterless function call IL generation.
                         m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnStdLib.IO).GetMethod(functionCall.identifier));
-                    }*/
+                    }
                 }
                 else
                 {
                     // Basically the same as above, but doesn't run from the GfnStdLib.
                     // This will be eventually used for user-defined functions.
-                    m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, functionCall.parameter);
-                    m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnCompiler.NoModule).GetMethod(functionCall.identifier,
-                        new System.Type[] { typeof(string) }));
+                    if (functionCall.parameters.Count > 0)
+                    {
+                        foreach (string parameter in functionCall.parameters)
+                        {
+                            //System.Console.WriteLine("!-!-! CodeGen <A> {0}", parameter);
+                            m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, parameter);
+                        }
+
+                        System.Type[] typeList = new System.Type[functionCall.parameters.Count];
+                        for (int i = 0; i < typeList.Length; ++i)
+                        {
+                            typeList[i] = typeof(string);
+                        }
+
+                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnCompiler.NoModule).GetMethod(functionCall.identifier,
+                        typeList));
+
+                    }
+                    else
+                    {
+                        // Parameterless function call IL generation.
+                        m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnCompiler.NoModule).GetMethod(functionCall.identifier));
+                    }
                 }
             }
             else
