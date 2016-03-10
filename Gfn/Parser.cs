@@ -1,57 +1,38 @@
+using System;
+using System.Collections.Generic;
+
 namespace GfnCompiler
 {
-    public sealed class Parser
+    internal sealed class Parser
     {
-        #region Data Members
         private Statement m_result;
-        private readonly System.Collections.Generic.IList<TokenData> m_tokens;
+        private readonly IList<TokenData> m_tokens;
         private int m_index;
-        #endregion // Data Members.
 
-        #region Helper Methods
-        public Statement GetResult()
+        public Statement Result
         {
-            return m_result;
+            get
+            {
+                return m_result;
+            }
         }
 
-        private bool EndOfTokens()
-        {
-            return m_index >= m_tokens.Count;
-        }
-
-        private void NextToken()
-        {
-            ++m_index;
-        }
-
-        private TokenData PeekNextToken()
-        {
-            return m_tokens[m_index + 1];
-        }
-
-        private TokenData CurrentToken()
-        {
-            return m_tokens[m_index];
-        }
-        #endregion // Helper Methods
-
-        public Parser(System.Collections.Generic.IList<TokenData> tokens)
+        public Parser(IList<TokenData> tokens)
         {
             m_tokens = tokens;
             m_index = 0;
+
+            Parse();
         }
 
-        public void Parse()
+        private void Parse()
         {
             m_result = ParseStatement();
 
             if (!EndOfTokens())
             {
-                throw new System.Exception("Expected end-of-file, but didn't quite get that.");
+                throw new Exception("PARSER::ERROR -> Expected end-of-file, but haven't actually reached it.");
             }
-
-            // Just a shizzling debug.
-            //System.Console.WriteLine("Parser Result: {0}", m_result.ToString());
         }
 
         private Statement ParseStatement()
@@ -60,185 +41,62 @@ namespace GfnCompiler
 
             if (EndOfTokens())
             {
-                throw new System.Exception("Expected a statement, but reached end-of-file.");
+                throw new Exception("Expected a statement, but got an end-of-file.");
             }
 
-            if (CurrentToken().data is string && Language.dataTypes.ContainsValue(CurrentToken().data.ToString()))
+            if (CurrentTokenInfo().data is string && Language.dataTypes.ContainsKey(CurrentTokenInfo().data.ToString()))
             {
-                result = ParseVariableCreation();
-            }
-            // Don't have to worry about this code running, ever.
-            else if (CurrentToken().data.Equals(Language.SpecialCharacter.FunctionPrefix))
-            {
-                result = ParseFunctionCall();
+                result = ParseVariableInstantiation();
             }
             else
             {
-                throw new System.Exception("Parse error.");
+                throw new Exception("PARSER::ERROR -> Came across an unknown token.");
             }
+
+            NextToken();
 
             result = ParseStatementTerminator(result);
-
-            // Nothing left to parse.
-            if (EndOfTokens())
-            {
-                return result;
-            }
-
+            
             return result;
         }
 
-        private Statement ParseVariableCreation()
+        private Statement ParseVariableInstantiation()
         {
-            ////////////////////////////////////////////
-            // <data_type> <identifier> = <expression> ;
-            string dataType = CurrentToken().data.ToString();
+            Type dataType = null;
+            Language.dataTypes.TryGetValue(CurrentTokenInfo().data.ToString(), out dataType);
 
-            NextToken();
-
-            if (EndOfTokens() || !(CurrentToken().data is string))
+            if (EndOfTokens() || !(CurrentTokenInfo().data is string))
             {
-                throw new System.Exception("Expected identifier after data type.");
-            }
-
-            string identifier = CurrentToken().data.ToString();
-
-            NextToken();
-
-            if (EndOfTokens() || !(CurrentToken().data.Equals(Language.SpecialCharacter.AssignEquals)))
-            {
-                throw new System.Exception("Expected '=' after <data_type> <identifier>");
+                throw new Exception("PARSER::ERROR -> Expected identifier after data type, but got end-of-file or unexpected token.");
             }
 
             NextToken();
 
-            // Rewrite this to be more flexible and less hard-coded - MaidenKeebs
-            switch (dataType)
-            {
-                case "integer32":
-                    IntegerLiteral integerLiteral = new IntegerLiteral(System.Int32.Parse(CurrentToken().data.ToString()));
-                    return new VariableCreation(identifier, integerLiteral);
+            string identifier = CurrentTokenInfo().data.ToString();
 
-                case "string":
-                    StringLiteral stringLiteral = new StringLiteral(CurrentToken().data.ToString());
-                    return new VariableCreation(identifier, stringLiteral);
-
-                case "boolean":
-                    BooleanLiteral booleanLiteral = new BooleanLiteral(System.Boolean.Parse(CurrentToken().data.ToString()));
-                    return new VariableCreation(identifier, booleanLiteral);
-
-                default:
-                    throw new System.Exception("Unknown thingy... <best error handling ever, not>");
-            }
-        }
-
-        private Statement ParseFunctionCall()
-        {
-            // Skip over the @ character.
             NextToken();
 
-            string module = System.String.Empty;
-            string identifier = System.String.Empty;
-            System.Collections.Generic.List<string> parameters = new System.Collections.Generic.List<string>();
-
-            if (PeekNextToken().data.Equals(Language.SpecialCharacter.Colon))
+            if (EndOfTokens() || !(CurrentTokenInfo().data.Equals(Language.SpecialCharacter.Equals)))
             {
-                // We're using a function from the GfnStdLib.
-                module = CurrentToken().data.ToString();
+                throw new Exception(String.Format("PARSER::ERROR ->Expected '=' after identifier, but got '{0}'", CurrentTokenInfo().data.ToString()));
+            }
 
-                // On to the colon.
-                NextToken();
-                // Now skip it.
-                NextToken();
+            NextToken();
 
-                identifier = CurrentToken().data.ToString();
-
-                NextToken();
-
-                if (!CurrentToken().data.Equals(Language.SpecialCharacter.LeftParenthesis))
-                {
-                    throw new System.Exception(System.String.Format("Expected ) on function call. <A> but got {0}, {1}, {2}",
-                        CurrentToken().data.ToString(), CurrentToken().lineNumber, CurrentToken().charPosition));
-                }
-
-                // Over the (
-                NextToken();
-
-                if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
-                {
-                    // Add the first parameter.
-                    parameters.Add(CurrentToken().data.ToString());
-                    NextToken();
-                    
-                    // Check for any more parameters.
-                    while (CurrentToken().data.Equals(Language.SpecialCharacter.Comma))
-                    {
-                        // Over comma.
-                        NextToken();
-                        // While the next token's a comma, keep parsing parameters.
-                        parameters.Add(CurrentToken().data.ToString());
-
-                        if (PeekNextToken().Equals(Language.SpecialCharacter.RightParenthesis))
-                        {
-                            break;
-                        }
-
-                        NextToken();
-                    }
-                }
-
-                if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
-                {
-                    throw new System.Exception(System.String.Format("Expected ) on function call. <B> but got {0}, {1}, {2}",
-                        CurrentToken().data.ToString(), CurrentToken().lineNumber, CurrentToken().charPosition));
-                }
+            if (dataType == typeof(int))
+            {
+                IntegerLiteral integerLiteral = new IntegerLiteral((int)CurrentTokenInfo().data);
+                return new VariableInstantiation(dataType, identifier, integerLiteral);
             }
             else
             {
-                identifier = CurrentToken().data.ToString();
-
-                NextToken();
-
-                if (!CurrentToken().data.Equals(Language.SpecialCharacter.LeftParenthesis))
-                {
-                    throw new System.Exception("Expected ( on function call. <B>");
-                }
-
-                // Over the (
-                NextToken();
-
-                if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
-                {
-                    // Get parameter.
-                    parameters.Add(CurrentToken().data.ToString());
-
-                    while (PeekNextToken().Equals(Language.SpecialCharacter.Comma))
-                    {
-                        // Skip the comma.
-                        NextToken();
-
-                        // Get the param.
-                        parameters.Add(CurrentToken().data.ToString());
-                    }
-
-                    NextToken();
-                }
-
-                if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
-                {
-                    throw new System.Exception("Expected ) on function call.");
-                }
+                throw new Exception("PARSER::ERROR -> Unkown expression in variable instantiation.");
             }
-
-            return new FunctionCall(module, identifier, parameters);
         }
 
         private Statement ParseStatementTerminator(Statement result)
         {
-            NextToken();
-            
-            // Just enforcing a semi-colon at the end of each statement.
-            if (!EndOfTokens() && CurrentToken().data.Equals(Language.SpecialCharacter.SemiColon))
+            if (!EndOfTokens() && CurrentTokenInfo().data.Equals(Language.SpecialCharacter.SemiColon))
             {
                 NextToken();
 
@@ -253,9 +111,25 @@ namespace GfnCompiler
             }
             else
             {
-                throw new System.Exception(System.String.Format("Expected SemiColon: line {0}, position {1}",
-                    CurrentToken().lineNumber.ToString(), CurrentToken().charPosition.ToString()));
+                throw new Exception("PARSER::ERROR -> Expected semi colon at end of statement.");
             }
         }
+
+        #region Helper Methods
+        private bool EndOfTokens()
+        {
+            return m_index >= m_tokens.Count;
+        }
+
+        private void NextToken()
+        {
+            ++m_index;
+        }
+
+        private TokenData CurrentTokenInfo()
+        {
+            return m_tokens[m_index];
+        }
+        #endregion // Helper Methods
     }
 }

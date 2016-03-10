@@ -1,49 +1,25 @@
-﻿namespace GfnCompiler
-{
-    internal static class Language
-    {
-        public const char SINGLE_LINE_COMMENT = '#';
+﻿using System;
+using System.Collections.Generic;
 
+namespace GfnCompiler
+{
+    internal sealed class Language
+    {
         public enum SpecialCharacter
         {
-            // Assignment.
-            AssignEquals,
-            // Separators.
-            Colon,
-            SemiColon,
-            Comma,
-            UnderScore,
-            // Function call prefix.
-            FunctionPrefix,
-            // Braces.
-            LeftParenthesis,
-            RightParenthesis
+            Equals,
+            SemiColon
         }
 
-        public static System.Collections.Generic.Dictionary<string, string> dataTypes =
-            new System.Collections.Generic.Dictionary<string, string>()
+        public static Dictionary<char, SpecialCharacter> SpecialCharacters = new Dictionary<char, SpecialCharacter>()
         {
-                { "INT_32", "integer32" },
-                { "INT_64", "integer64" },
-                { "STRING", "string" },
-                { "BOOLEAN", "boolean" }
+            { '=', SpecialCharacter.Equals },
+            { ';', SpecialCharacter.SemiColon }
         };
 
-        public static System.Collections.Generic.Dictionary<char, Language.SpecialCharacter> specialCharacters =
-            new System.Collections.Generic.Dictionary<char, SpecialCharacter>()
+        public static Dictionary<string, Type> dataTypes = new Dictionary<string, Type>()
         {
-                // Assignment.
-                { '=', Language.SpecialCharacter.AssignEquals },
-                // Separators.
-                { ':', Language.SpecialCharacter.Colon },
-                { ';', Language.SpecialCharacter.SemiColon },
-                { ',', Language.SpecialCharacter.Comma },
-                { '_', Language.SpecialCharacter.UnderScore },
-                // Function call prefix.
-                { '@', Language.SpecialCharacter.FunctionPrefix },
-                // Braces.
-                { '(', Language.SpecialCharacter.LeftParenthesis },
-                { ')', Language.SpecialCharacter.RightParenthesis }
+            { "integer", typeof(int) }
         };
     }
 }

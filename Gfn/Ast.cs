@@ -1,3 +1,5 @@
+using System;
+
 namespace GfnCompiler
 {
     public abstract class Statement
@@ -16,42 +18,17 @@ namespace GfnCompiler
         }
     }
 
-    public class VariableCreation : Statement
+    public class VariableInstantiation : Statement
     {
-//        public System.Type dataType;
+        public Type dataType;
         public string identifier;
         public Expression expression;
 
-        public VariableCreation(string identifier, Expression expression)
+        public VariableInstantiation(Type dataType, string identifier, Expression expression)
         {
+            this.dataType = dataType;
             this.identifier = identifier;
             this.expression = expression;
-        }
-    }
-
-    public class VariableAssignment : Statement
-    {
-        public string identifier;
-        public Expression expression;
-
-        public VariableAssignment(string identifier, Expression expression)
-        {
-            this.identifier = identifier;
-            this.expression = expression;
-        }
-    }
-
-    public class FunctionCall : Statement
-    {
-        public string module; // Not always applicable.
-        public string identifier;
-        public System.Collections.Generic.IList<string> parameters;
-
-        public FunctionCall(string module, string identifier, System.Collections.Generic.List<string> parameters)
-        {
-            this.module = module;
-            this.identifier = identifier;
-            this.parameters = parameters;
         }
     }
 
@@ -61,29 +38,9 @@ namespace GfnCompiler
 
     public class IntegerLiteral : Expression
     {
-        public int value;
+        int value;
 
         public IntegerLiteral(int value)
-        {
-            this.value = value;
-        }
-    }
-
-    public class StringLiteral : Expression
-    {
-        public string value;
-
-        public StringLiteral(string value)
-        {
-            this.value = value;
-        }
-    }
-
-    public class BooleanLiteral : Expression
-    {
-        public bool value;
-
-        public BooleanLiteral(bool value)
         {
             this.value = value;
         }
