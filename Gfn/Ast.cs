@@ -1,3 +1,5 @@
+using System;
+
 namespace GfnCompiler
 {
     public abstract class Statement
@@ -45,18 +47,33 @@ namespace GfnCompiler
     {
         public string module; // Not always applicable.
         public string identifier;
-        public System.Collections.Generic.IList<string> parameters;
+        public System.Collections.Generic.IList<Expression> parameters;
 
-        public FunctionCall(string module, string identifier, System.Collections.Generic.List<string> parameters)
+        public FunctionCall(string module, string identifier, System.Collections.Generic.List<Expression> parameters)
         {
             this.module = module;
             this.identifier = identifier;
             this.parameters = parameters;
         }
+
+        /*public static explicit operator FunctionCall(Expression v)
+        {
+            throw new NotImplementedException();
+        }*/
     }
 
     public abstract class Expression
     {
+    }
+
+    public class Variable : Expression
+    {
+        public string identifier;
+
+        public Variable(string identifier)
+        {
+            this.identifier = identifier;
+        }
     }
 
     public class IntegerLiteral : Expression

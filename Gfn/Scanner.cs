@@ -1,10 +1,9 @@
-// TODO-MaidenKeebs:
-//     Re-implement the char position code because it isn't
-//     always accurate, sorry.
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace GfnCompiler
 {
-    // Basic container for storing read-in tokens.
     public struct TokenData
     {
         public int lineNumber;
@@ -21,39 +20,39 @@ namespace GfnCompiler
 
     public sealed class Scanner
     {
-        private readonly System.Collections.Generic.IList<TokenData> m_tokens;
-        private System.IO.TextReader m_inputSourceFile;
+        private readonly IList<TokenData> m_tokens;
+        private TextReader m_inputSourceFile;
         private char m_currentFileChar;
         private int m_currentFileLineNumber;
         private int m_currentFileCharPosition;
 
-        public Scanner(System.IO.TextReader inputSourceFile)
+        public Scanner(TextReader inputSourceFile)
         {
-            m_tokens = new System.Collections.Generic.List<TokenData>();
+            m_tokens = new List<TokenData>();
             m_inputSourceFile = inputSourceFile;
             m_currentFileLineNumber = 1;
-            m_currentFileCharPosition = 0;
+            m_currentFileCharPosition = 1;
 
             Scan();
 
-            foreach (TokenData token in m_tokens)
-            {
-                GfnDebug.Print(GfnDebug.Origin.GFN_SCANNER.ToString(), "Token: {0}", token.data.ToString());
-            }
+            GfnDebug.PrintScannerResult(m_tokens);
         }
 
-        public System.Collections.Generic.IList<TokenData> GetTokens()
+        #region Interface
+        public IList<TokenData> GetTokens()
         {
             return m_tokens;
         }
+        #endregion // Interface
 
+        #region Helper Methods
         private int PeekNextToken()
         {
             m_currentFileChar = (char)m_inputSourceFile.Peek();
             return (int)m_currentFileChar;
         }
 
-        private void ReadNextToken()
+        private void ReadNextChar()
         {
             m_inputSourceFile.Read();
             m_currentFileCharPosition += 1;
@@ -63,7 +62,7 @@ namespace GfnCompiler
         {
             m_inputSourceFile.ReadLine();
             m_currentFileLineNumber += 1;
-            m_currentFileCharPosition = 0;
+            m_currentFileCharPosition = 1;
         }
 
         private char CurrentToken()
@@ -75,22 +74,24 @@ namespace GfnCompiler
         {
             return m_inputSourceFile.Peek() == -1;
         }
+        #endregion // Helper Methods
 
+        #region Core Methods
         private void Scan()
         {
             while (m_inputSourceFile.Peek() != -1)
             {
                 PeekNextToken();
 
-                if (System.Char.IsWhiteSpace(CurrentToken()))
+                if (char.IsWhiteSpace(CurrentToken()))
                 {
                     ScanWhiteSpace();
                 }
-                else if (System.Char.IsLetter(CurrentToken()))
+                else if (char.IsLetter(CurrentToken()))
                 {
                     ScanKeywordOrIdentifier();
                 }
-                else if (System.Char.IsDigit(CurrentToken()))
+                else if (char.IsDigit(CurrentToken()))
                 {
                     ScanNumber();
                 }
@@ -113,11 +114,11 @@ namespace GfnCompiler
         {
             if (CurrentToken().Equals('\n'))
             {
-                m_currentFileLineNumber += 1;
-                m_currentFileCharPosition = 0;
+                ReadToNextLine();
+                return;
             }
 
-            m_inputSourceFile.Read();
+            ReadNextChar();
         }
 
         private void ScanKeywordOrIdentifier()
@@ -127,10 +128,10 @@ namespace GfnCompiler
             int lineNumber = m_currentFileLineNumber;
             int charPosition = m_currentFileCharPosition;
 
-            while (System.Char.IsLetter(CurrentToken()) || System.Char.IsDigit(CurrentToken()) || CurrentToken().Equals('_'))
+            while (char.IsLetter(CurrentToken()) || char.IsDigit(CurrentToken()) || CurrentToken().Equals('_'))
             {
                 token.Append(CurrentToken());
-                ReadNextToken();
+                ReadNextChar();
 
                 if (EndOfFile())
                 {
@@ -150,10 +151,10 @@ namespace GfnCompiler
             int lineNumber = m_currentFileLineNumber;
             int charPosition = m_currentFileCharPosition;
 
-            while (System.Char.IsDigit(CurrentToken()))
+            while (char.IsDigit(CurrentToken()))
             {
                 token.Append(CurrentToken());
-                ReadNextToken();
+                ReadNextChar();
 
                 if (EndOfFile())
                 {
@@ -163,7 +164,7 @@ namespace GfnCompiler
                 PeekNextToken();
             }
 
-            m_tokens.Add(new TokenData(lineNumber, charPosition, System.Int32.Parse(token.ToString())));
+            m_tokens.Add(new TokenData(lineNumber, charPosition, int.Parse(token.ToString())));
         }
 
         private void ScanStringLiteral()
@@ -174,26 +175,26 @@ namespace GfnCompiler
             int charPosition = m_currentFileCharPosition;
 
             // Skip the initial '"'.
-            ReadNextToken();
+            ReadNextChar();
 
             if (EndOfFile())
             {
-                throw new System.Exception("Unterminated string literal due to end-of-file. (A)");
+                throw new Exception("Unterminated string literal due to end-of-file. (A)");
             }
 
             while (PeekNextToken() != '"')
             {
                 token.Append(CurrentToken());
-                ReadNextToken();
+                ReadNextChar();
 
                 if (EndOfFile())
                 {
-                    throw new System.Exception("Unterminated string literal due to end-of-file.(B)");
+                    throw new Exception("Unterminated string literal due to end-of-file.(B)");
                 }
             }
 
             // Skip the second '"'.
-            ReadNextToken();
+            ReadNextChar();
 
             m_tokens.Add(new TokenData(lineNumber, charPosition, token));
         }
@@ -202,22 +203,22 @@ namespace GfnCompiler
         {
             bool foundMatch = false;
 
-            foreach (System.Collections.Generic.KeyValuePair<char, Language.SpecialCharacter> pair in Language.specialCharacters)
+            foreach (KeyValuePair<char, Language.SpecialCharacter> pair in Language.specialCharacters)
             {
                 if (CurrentToken().Equals(pair.Key))
                 {
                     foundMatch = true;
 
                     m_tokens.Add(new TokenData(m_currentFileLineNumber, m_currentFileCharPosition, pair.Value));
-                    ReadNextToken();
+                    ReadNextChar();
                 }
             }
 
             if (!foundMatch)
             {
-                GfnDebug.ThrowException(GfnDebug.Origin.GFN_SCANNER.ToString(),
-                    "Encountered an unknown token on line '{0}' at position '{1}'.", m_currentFileLineNumber, m_currentFileCharPosition);
+                throw new Exception(String.Format("Encountered an unknown token on line '{0}' at position '{1}'.", m_currentFileLineNumber, m_currentFileCharPosition));
             }
         }
+        #endregion // Core Methods
     }
 }

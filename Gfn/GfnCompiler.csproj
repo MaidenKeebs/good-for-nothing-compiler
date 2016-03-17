@@ -85,6 +85,7 @@
   <ItemGroup>
     <Content Include="LanguageDefs\easygrammar.txt" />
     <Content Include="LanguageDefs\grammar.txt" />
+    <Content Include="LanguageDefs\Program_Example.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

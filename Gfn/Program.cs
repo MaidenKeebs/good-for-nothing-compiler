@@ -1,6 +1,8 @@
 // The original code was originally Copyright © Microsoft Corporation.  All rights reserved.
 // The original code was published with an article at https://msdn.microsoft.com/en-us/magazine/cc136756.aspx by Joel Pobar.
 // The original terms were specified at http://www.microsoft.com/info/cpyright.htm but that page is long dead :)
+using System;
+using System.IO;
 
 namespace GfnCompiler
 {
@@ -24,13 +26,7 @@ namespace GfnCompiler
         {
             foreach (string argument in arguments)
             {
-                System.IO.FileAttributes fileAttributes = System.IO.File.GetAttributes(argument);
-
-                if ((fileAttributes & System.IO.FileAttributes.Directory) == System.IO.FileAttributes.Directory)
-                {
-                    CompileByDirectory(argument);
-                }
-                else
+                if (File.Exists(argument))
                 {
                     CompileByFile(argument);
                 }
@@ -43,7 +39,7 @@ namespace GfnCompiler
 
             Scanner scanner;
 
-            using (System.IO.TextReader inputSourceFile = System.IO.File.OpenText(path))
+            using (TextReader inputSourceFile = System.IO.File.OpenText(path))
             {
                 scanner = new Scanner(inputSourceFile);
             }
@@ -55,21 +51,14 @@ namespace GfnCompiler
             codeGenerator.Compile();
         }
 
-        private static void CompileByDirectory(string path)
-        {
-            // TODO-MaidenKeebs:
-            //     Implement this function.
-        }
-
         private static void DisplayDefaultCompilerText()
         {
-            System.Console.WriteLine("Gfn Command Line Usage: gfn.exe <file_name.gfn> | <directory_name>");
+            Console.WriteLine("Gfn Command Line Usage: gfn.exe <file_name.gfn>");
         }
 
         private static void DisplayPostCompilationText()
         {
-            System.Console.WriteLine("Compilation Complete!");
-            System.Console.ReadLine();
+            Console.WriteLine("Compilation Complete!");
         }
     }
 }

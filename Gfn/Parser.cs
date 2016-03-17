@@ -79,7 +79,6 @@ namespace GfnCompiler
 
             result = ParseStatementTerminator(result);
 
-            // Nothing left to parse.
             if (EndOfTokens())
             {
                 return result;
@@ -90,8 +89,6 @@ namespace GfnCompiler
 
         private Statement ParseVariableCreation()
         {
-            ////////////////////////////////////////////
-            // <data_type> <identifier> = <expression> ;
             string dataType = CurrentToken().data.ToString();
 
             NextToken();
@@ -139,7 +136,7 @@ namespace GfnCompiler
 
             string module = System.String.Empty;
             string identifier = System.String.Empty;
-            System.Collections.Generic.List<string> parameters = new System.Collections.Generic.List<string>();
+            System.Collections.Generic.List<Expression> parameters = new System.Collections.Generic.List<Expression>();
 
             if (PeekNextToken().data.Equals(Language.SpecialCharacter.Colon))
             {
@@ -167,7 +164,7 @@ namespace GfnCompiler
                 if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
                 {
                     // Add the first parameter.
-                    parameters.Add(CurrentToken().data.ToString());
+                    parameters.Add(ParseExpression());
                     NextToken();
                     
                     // Check for any more parameters.
@@ -176,7 +173,7 @@ namespace GfnCompiler
                         // Over comma.
                         NextToken();
                         // While the next token's a comma, keep parsing parameters.
-                        parameters.Add(CurrentToken().data.ToString());
+                        parameters.Add(ParseExpression());
 
                         if (PeekNextToken().Equals(Language.SpecialCharacter.RightParenthesis))
                         {
@@ -210,7 +207,7 @@ namespace GfnCompiler
                 if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
                 {
                     // Get parameter.
-                    parameters.Add(CurrentToken().data.ToString());
+                    parameters.Add(ParseExpression());
 
                     while (PeekNextToken().Equals(Language.SpecialCharacter.Comma))
                     {
@@ -218,7 +215,7 @@ namespace GfnCompiler
                         NextToken();
 
                         // Get the param.
-                        parameters.Add(CurrentToken().data.ToString());
+                        parameters.Add(ParseExpression());
                     }
 
                     NextToken();
@@ -256,6 +253,57 @@ namespace GfnCompiler
                 throw new System.Exception(System.String.Format("Expected SemiColon: line {0}, position {1}",
                     CurrentToken().lineNumber.ToString(), CurrentToken().charPosition.ToString()));
             }
+        }
+
+        // TODO-MaidenKeebs:
+        //     Continue working on this function.
+        private Expression ParseExpression()
+        {
+            Expression expression;
+
+            if (EndOfTokens())
+            {
+                throw new System.Exception("Reached end of tokens in ParseExpression().");
+            }
+
+            expression = ParseUnaryExpression();
+
+            return expression;
+        }
+
+        // Example: "Hello, World!"
+        private Expression ParseUnaryExpression()
+        {
+            if (CurrentToken().data is System.Text.StringBuilder)
+            {
+                string value = CurrentToken().data.ToString();
+                StringLiteral stringLiteral = new StringLiteral(value);
+
+                return stringLiteral;
+            }
+            else if (CurrentToken().data is int)
+            {
+                int value = (int)CurrentToken().data;
+                IntegerLiteral integerLiteral = new IntegerLiteral(value);
+
+                return integerLiteral;
+            }
+            else if (CurrentToken().data is string)
+            {
+                string identifier = CurrentToken().data.ToString();
+                Variable variable = new Variable(identifier);
+
+                return variable;
+            }
+
+            // Manual here.
+            throw new System.Exception("Parser Error: Unknown Unary Expression has been found!");
+        }
+
+        // Example: a+b
+        private Expression ParseBinaryExpression()
+        {
+            return null;
         }
     }
 }

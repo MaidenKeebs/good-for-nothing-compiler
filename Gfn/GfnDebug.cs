@@ -1,24 +1,20 @@
-﻿namespace GfnCompiler
+﻿using System.Collections.Generic;
+using System.IO;
+
+namespace GfnCompiler
 {
-    public sealed class GfnDebug
+    internal sealed class GfnDebug
     {
-        public enum Origin
+        internal static void PrintScannerResult(IList<TokenData> tokens)
         {
-            GFN_SCANNER,
-            GFN_PARSER,
-            GFN_CODEGENERATOR
-        }
-
-        // Just a replacement for all those System.Exception(...) calls.
-        public static void ThrowException(string origin, string exceptionText, params object[] args)
-        {
-            throw new System.Exception(System.String.Format(origin + "::ERROR -> " + exceptionText, args));
-        }
-
-        // Just used for checking scanner, parser, code generator results.
-        public static void Print(string origin, string text, params object[] args)
-        {
-            System.Console.WriteLine(origin + "::INFO -> " + text, args);
+            using (StreamWriter file = new StreamWriter(@"./Output/Scanner_Result.txt"))
+            {
+                foreach (TokenData token in tokens)
+                {
+                    file.WriteLine(string.Format("Data: {0,24} | Line Number: {1,8} | Char Position: {2,8}",
+                        token.data.ToString(), token.lineNumber, token.charPosition));
+                }
+            }
         }
     }
 }

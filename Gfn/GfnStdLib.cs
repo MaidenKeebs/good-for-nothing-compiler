@@ -20,21 +20,22 @@ namespace GfnCompiler
     // Namespace purely for the stdlib.
     namespace GfnStdLib
     {
+        namespace Objects
+        {
+            public class Player
+            {
+                public Player(string name)
+                {
+                    System.Console.WriteLine("Welcome to your new adventure, {0}!", name);
+                }
+            }
+        }
+
         public sealed class IO
         {
             public static void Print(string text)
             {
                 System.Console.WriteLine(System.String.Format("IO:Print -> {0}", text));
-            }
-
-            public static void PrintTwoThings(string a, string b)
-            {
-                System.Console.WriteLine(System.String.Format("IO:Print -> {0}, {1}", a, b));
-            }
-
-            public static void PrintThree(string text1, string text2, string text3)
-            {
-                System.Console.WriteLine("{0}, {1}, {2}", text1, text2, text3);
             }
 
             public static void CountToTen()

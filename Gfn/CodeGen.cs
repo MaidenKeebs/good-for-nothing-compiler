@@ -1,3 +1,7 @@
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+
 namespace GfnCompiler
 {
     public sealed class CodeGenerator
@@ -39,7 +43,26 @@ namespace GfnCompiler
             // Comment this - MaidenKeebs
             GenerateStatement(m_statement);
 
-            m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ret);
+            // Create custom method for testing purposes.
+            MethodBuilder methodBuilder = m_typeBuilder.DefineMethod(
+                "PrintGreeting",
+                MethodAttributes.Public | MethodAttributes.Static,
+                typeof(void),
+                new Type[] { });
+            ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldstr, "Greetings, Adventurer.");
+            ilGenerator.Emit(
+                OpCodes.Call,
+                typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            // Call the method here.
+            m_ilGenerator.EmitCall(
+                OpCodes.Call,
+                methodBuilder,
+                new Type[] { });
+
+            m_ilGenerator.Emit(OpCodes.Ret);
             m_typeBuilder.CreateType();
             m_moduleBuilder.CreateGlobalFunctions();
             m_assemblyBuilder.SetEntryPoint(m_methodBuilder);
@@ -79,29 +102,24 @@ namespace GfnCompiler
             }
             else if (statement is FunctionCall)
             {
-                //System.Console.WriteLine("Generating: FunctionCall {0}", ((FunctionCall)statement).identifier);
-
                 FunctionCall functionCall = (FunctionCall)statement;
 
                 if (functionCall.module != System.String.Empty)
                 {
                     if (functionCall.parameters.Count > 0)
                     {
-                        foreach (string parameter in functionCall.parameters)
-                        {
-                            //System.Console.WriteLine("!-!-! CodeGen <A> {0}", parameter);
-                            m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, parameter);
-                        }
-
                         System.Type[] typeList = new System.Type[functionCall.parameters.Count];
-                        for (int i = 0; i < typeList.Length; ++i)
+                        int i = 0;
+                        foreach (Expression parameter in functionCall.parameters)
                         {
+                            GenerateLoadToStackForExpression(parameter, parameter.GetType());
+
                             typeList[i] = typeof(string);
+                            ++i;
                         }
 
                         m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Call, typeof(GfnStdLib.IO).GetMethod(functionCall.identifier,
                         typeList));
-
                     }
                     else
                     {
@@ -115,12 +133,14 @@ namespace GfnCompiler
                     // This will be eventually used for user-defined functions.
                     if (functionCall.parameters.Count > 0)
                     {
-                        foreach (string parameter in functionCall.parameters)
+                        foreach (Expression parameter in functionCall.parameters)
                         {
                             //System.Console.WriteLine("!-!-! CodeGen <A> {0}", parameter);
-                            m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, parameter);
+                            //m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, parameter);
+                            GenerateLoadToStackForExpression(parameter, parameter.GetType());
                         }
 
+                        // Hard-coded.
                         System.Type[] typeList = new System.Type[functionCall.parameters.Count];
                         for (int i = 0; i < typeList.Length; ++i)
                         {
@@ -144,16 +164,12 @@ namespace GfnCompiler
             }
         }
 
-        // This does something.
+        // Load variables to stack.
         private void GenerateLoadToStackForExpression(Expression expression, System.Type expectedType)
         {
-            System.Type deliveredType = null;
-
             if (expression is IntegerLiteral)
             {
                 IntegerLiteral integerLiteral = (IntegerLiteral)expression;
-
-                deliveredType = typeof(int);
 
                 m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldc_I4, integerLiteral.value);
             }
@@ -161,15 +177,11 @@ namespace GfnCompiler
             {
                 StringLiteral stringLiteral = (StringLiteral)expression;
 
-                deliveredType = typeof(string);
-
                 m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldstr, stringLiteral.value);
             }
             else if (expression is BooleanLiteral)
             {
                 BooleanLiteral booleanLiteral = (BooleanLiteral)expression;
-
-                deliveredType = typeof(bool);
 
                 // Generate either 1 or 0 to represent boolean values.
                 if (booleanLiteral.value == true)
@@ -181,19 +193,25 @@ namespace GfnCompiler
                     m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldc_I4_0);
                 }
             }
+            else if (expression is Variable)
+            {
+                Variable variable = (Variable)expression;
+
+                if (!m_symbolTable.ContainsKey(variable.identifier))
+                {
+                    throw new System.Exception(System.String.Format("Undeclared variable '{0}'", variable.identifier));
+                }
+
+                m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Ldloc, m_symbolTable[variable.identifier]);
+            }
             else
             {
                 throw new System.Exception("Don't know how to generate:" + expression.GetType().Name);
             }
-
-            // Happy times.
-            if (deliveredType == expectedType)
-            {
-                return;
-            }
+            // Some code here, I do believe.
         }
 
-        // This does something aswell.
+        // Store variables in memory.
         private void GenerateStoreFromStack(string name, System.Type type)
         {
             if (!m_symbolTable.ContainsKey(name))
@@ -209,6 +227,8 @@ namespace GfnCompiler
                 throw new System.Exception(System.String.Format("{0} is of type {1} but attempted to store value of type {2}",
                     name, localType == null ? "<unknown>" : localType.Name, type.Name));
             }
+
+            m_ilGenerator.Emit(System.Reflection.Emit.OpCodes.Stloc, m_symbolTable[name]);
         }
     }
 }
