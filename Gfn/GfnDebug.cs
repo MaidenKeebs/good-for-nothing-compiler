@@ -16,5 +16,15 @@ namespace GfnCompiler
                 }
             }
         }
+        internal static void PrintParserResult(IList<Statement> statements)
+        {
+            using (StreamWriter file = new StreamWriter(@"./Output/Parser_Result.txt"))
+            {
+                foreach (Statement statement in statements)
+                {
+                    file.WriteLine(statement);
+                }
+            }
+        }
     }
 }

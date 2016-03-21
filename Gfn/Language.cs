@@ -17,16 +17,17 @@
             FunctionPrefix,
             // Braces.
             LeftParenthesis,
-            RightParenthesis
+            RightParenthesis,
+            LeftBrace,
+            RightBrace
         }
 
         public static System.Collections.Generic.Dictionary<string, string> dataTypes =
             new System.Collections.Generic.Dictionary<string, string>()
         {
-                { "INT_32", "integer32" },
-                { "INT_64", "integer64" },
-                { "STRING", "string" },
-                { "BOOLEAN", "boolean" }
+                { "INT_32", "Integer" },
+                { "STRING", "String" },
+                { "BOOLEAN", "Boolean" }
         };
 
         public static System.Collections.Generic.Dictionary<char, Language.SpecialCharacter> specialCharacters =
@@ -43,7 +44,9 @@
                 { '@', Language.SpecialCharacter.FunctionPrefix },
                 // Braces.
                 { '(', Language.SpecialCharacter.LeftParenthesis },
-                { ')', Language.SpecialCharacter.RightParenthesis }
+                { ')', Language.SpecialCharacter.RightParenthesis },
+                { '{', Language.SpecialCharacter.LeftBrace },
+                { '}', Language.SpecialCharacter.RightBrace }
         };
     }
 }

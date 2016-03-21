@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace GfnCompiler
 {
     public sealed class Parser
@@ -6,6 +9,8 @@ namespace GfnCompiler
         private Statement m_result;
         private readonly System.Collections.Generic.IList<TokenData> m_tokens;
         private int m_index;
+
+        private IList<Statement> m_parserDebug;
         #endregion // Data Members.
 
         #region Helper Methods
@@ -39,6 +44,8 @@ namespace GfnCompiler
         {
             m_tokens = tokens;
             m_index = 0;
+
+            m_parserDebug = new List<Statement>();
         }
 
         public void Parse()
@@ -50,8 +57,7 @@ namespace GfnCompiler
                 throw new System.Exception("Expected end-of-file, but didn't quite get that.");
             }
 
-            // Just a shizzling debug.
-            //System.Console.WriteLine("Parser Result: {0}", m_result.ToString());
+            GfnDebug.PrintParserResult(m_parserDebug);
         }
 
         private Statement ParseStatement()
@@ -67,10 +73,13 @@ namespace GfnCompiler
             {
                 result = ParseVariableCreation();
             }
-            // Don't have to worry about this code running, ever.
             else if (CurrentToken().data.Equals(Language.SpecialCharacter.FunctionPrefix))
             {
                 result = ParseFunctionCall();
+            }
+            else if (CurrentToken().data.Equals("Function"))
+            {
+                result = ParseFunctionDefinition();
             }
             else
             {
@@ -79,6 +88,8 @@ namespace GfnCompiler
 
             result = ParseStatementTerminator(result);
 
+            // This and the below return result is weird, but I'm not
+            // going to touch it at the moment.
             if (EndOfTokens())
             {
                 return result;
@@ -112,17 +123,17 @@ namespace GfnCompiler
             // Rewrite this to be more flexible and less hard-coded - MaidenKeebs
             switch (dataType)
             {
-                case "integer32":
+                case "Integer":
                     IntegerLiteral integerLiteral = new IntegerLiteral(System.Int32.Parse(CurrentToken().data.ToString()));
-                    return new VariableCreation(identifier, integerLiteral);
+                    return new VariableCreation(typeof(int), identifier, integerLiteral);
 
-                case "string":
+                case "String":
                     StringLiteral stringLiteral = new StringLiteral(CurrentToken().data.ToString());
-                    return new VariableCreation(identifier, stringLiteral);
+                    return new VariableCreation(typeof(string), identifier, stringLiteral);
 
-                case "boolean":
+                case "Boolean":
                     BooleanLiteral booleanLiteral = new BooleanLiteral(System.Boolean.Parse(CurrentToken().data.ToString()));
-                    return new VariableCreation(identifier, booleanLiteral);
+                    return new VariableCreation(typeof(bool), identifier, booleanLiteral);
 
                 default:
                     throw new System.Exception("Unknown thingy... <best error handling ever, not>");
@@ -136,7 +147,7 @@ namespace GfnCompiler
 
             string module = System.String.Empty;
             string identifier = System.String.Empty;
-            System.Collections.Generic.List<Expression> parameters = new System.Collections.Generic.List<Expression>();
+            List<Expression> parameters = new System.Collections.Generic.List<Expression>();
 
             if (PeekNextToken().data.Equals(Language.SpecialCharacter.Colon))
             {
@@ -230,8 +241,69 @@ namespace GfnCompiler
             return new FunctionCall(module, identifier, parameters);
         }
 
+        private Statement ParseFunctionDefinition()
+        {
+            // Skip the Function keyword.
+            NextToken();
+
+            string identifier = CurrentToken().data.ToString();
+
+            NextToken();
+
+            if (!CurrentToken().data.Equals(Language.SpecialCharacter.LeftParenthesis))
+            {
+                throw new System.Exception("Function definition: expected (");
+            }
+
+            NextToken();
+
+
+            if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightParenthesis))
+            {
+                throw new System.Exception("Function definition: expected )");
+            }
+
+            NextToken();
+
+            if (!CurrentToken().data.Equals(Language.SpecialCharacter.Colon))
+            {
+                throw new System.Exception("Function definition: expected :");
+            }
+
+            NextToken();
+
+            string returnType = CurrentToken().data.ToString();
+
+            NextToken();
+
+            if (!CurrentToken().data.Equals(Language.SpecialCharacter.LeftBrace))
+            {
+                throw new System.Exception("Function Definition: expected {");
+            }
+
+            NextToken();
+
+            Statement body = null;
+            if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightBrace))
+            {
+                while (!CurrentToken().data.Equals(Language.SpecialCharacter.RightBrace))
+                {
+                    body = ParseStatement();
+                }
+            }
+
+            if (!CurrentToken().data.Equals(Language.SpecialCharacter.RightBrace))
+            {
+                throw new System.Exception("Function definition: expected }");
+            }
+
+            return new FunctionDefinition(identifier, returnType, body);
+        }
+
         private Statement ParseStatementTerminator(Statement result)
         {
+            m_parserDebug.Add(result);
+
             NextToken();
             
             // Just enforcing a semi-colon at the end of each statement.
@@ -239,14 +311,17 @@ namespace GfnCompiler
             {
                 NextToken();
 
-                if (!EndOfTokens())
-                {
-                    return new StatementSequence(result, ParseStatement());
-                }
-                else
+                if (EndOfTokens())
                 {
                     return result;
                 }
+
+                if (CurrentToken().data.Equals(Language.SpecialCharacter.RightBrace))
+                {
+                    return result;
+                }
+
+                return new StatementSequence(result, ParseStatement());
             }
             else
             {

@@ -13,7 +13,7 @@ namespace GfnCompiler
         private readonly System.Reflection.Emit.ModuleBuilder m_moduleBuilder;
         private readonly string m_moduleName;
         private readonly Statement m_statement;
-        private static System.Collections.Generic.Dictionary<string, System.Reflection.Emit.LocalBuilder> m_symbolTable;
+        private static System.Collections.Generic.Dictionary<string, LocalBuilder> m_symbolTable;
         private readonly System.Reflection.Emit.TypeBuilder m_typeBuilder;
 
         public CodeGenerator(Statement statement, string moduleName)
@@ -42,25 +42,6 @@ namespace GfnCompiler
         {
             // Comment this - MaidenKeebs
             GenerateStatement(m_statement);
-
-            // Create custom method for testing purposes.
-            MethodBuilder methodBuilder = m_typeBuilder.DefineMethod(
-                "PrintGreeting",
-                MethodAttributes.Public | MethodAttributes.Static,
-                typeof(void),
-                new Type[] { });
-            ILGenerator ilGenerator = methodBuilder.GetILGenerator();
-            ilGenerator.Emit(OpCodes.Ldstr, "Greetings, Adventurer.");
-            ilGenerator.Emit(
-                OpCodes.Call,
-                typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
-            ilGenerator.Emit(OpCodes.Ret);
-
-            // Call the method here.
-            m_ilGenerator.EmitCall(
-                OpCodes.Call,
-                methodBuilder,
-                new Type[] { });
 
             m_ilGenerator.Emit(OpCodes.Ret);
             m_typeBuilder.CreateType();
@@ -114,7 +95,33 @@ namespace GfnCompiler
                         {
                             GenerateLoadToStackForExpression(parameter, parameter.GetType());
 
-                            typeList[i] = typeof(string);
+                            if (parameter is IntegerLiteral)
+                            {
+                                typeList[i] = typeof(int);
+                            }
+                            else if (parameter is StringLiteral)
+                            {
+                                typeList[i] = typeof(string);
+                            }
+                            else if (parameter is Variable)
+                            {
+                                typeList[i] = typeof(string);
+
+                                Type variableType = m_symbolTable[((Variable)parameter).identifier].LocalType;
+                                if (variableType == typeof(IntegerLiteral))
+                                {
+                                    typeList[i] = typeof(int);
+                                }
+                                else if (variableType == typeof(StringLiteral))
+                                {
+                                    typeList[i] = typeof(string);
+                                }
+                                else if (variableType == typeof(BooleanLiteral))
+                                {
+                                    typeList[i] = typeof(bool);
+                                }
+                            }
+
                             ++i;
                         }
 
@@ -158,9 +165,28 @@ namespace GfnCompiler
                     }
                 }
             }
+            else if (statement is FunctionDefinition)
+            {
+                FunctionDefinition functionDefinition = (FunctionDefinition)statement;
+
+                MethodBuilder methodBuilder = m_typeBuilder.DefineMethod(
+                    functionDefinition.identifier,
+                    MethodAttributes.Private | MethodAttributes.Static,
+                    typeof(void),
+                    new Type[] { });
+
+                ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+
+                if (functionDefinition.body != null)
+                {
+                    // Build here.
+                }
+                
+                ilGenerator.Emit(OpCodes.Ret);
+            }
             else
             {
-                throw new System.Exception("Unable to generator a: " + statement.GetType().Name);
+                throw new System.Exception("Unable to generator a thing: '" + statement + "'.");
             }
         }
 

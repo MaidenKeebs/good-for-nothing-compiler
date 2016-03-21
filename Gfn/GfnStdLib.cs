@@ -1,9 +1,5 @@
-﻿/***
- * Message from MaidenKeebs:
- *
- * Hey fellow programmer! I felt like implementing a somewhat minimal
- * standard library of simple IO functions. Feel free to add or change.
- ***/
+﻿using System;
+
 namespace GfnCompiler
 {
     // This is just a placeholder for user-defined functions.
@@ -20,30 +16,21 @@ namespace GfnCompiler
     // Namespace purely for the stdlib.
     namespace GfnStdLib
     {
-        namespace Objects
-        {
-            public class Player
-            {
-                public Player(string name)
-                {
-                    System.Console.WriteLine("Welcome to your new adventure, {0}!", name);
-                }
-            }
-        }
-
         public sealed class IO
         {
-            public static void Print(string text)
+            public static void PrintLine(string text)
             {
-                System.Console.WriteLine(System.String.Format("IO:Print -> {0}", text));
+                Console.WriteLine(text);
             }
 
-            public static void CountToTen()
+            public static void PrintLine(int text)
             {
-                for (int i = 0; i < 10; ++i)
-                {
-                    System.Console.WriteLine((i+1).ToString());
-                }
+                Console.WriteLine(text);
+            }
+
+            public static void PrintLine(bool text)
+            {
+                Console.WriteLine(text);
             }
         }
     }

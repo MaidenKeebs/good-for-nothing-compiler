@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace GfnCompiler
 {
@@ -20,12 +21,13 @@ namespace GfnCompiler
 
     public class VariableCreation : Statement
     {
-//        public System.Type dataType;
+        public Type dataType;
         public string identifier;
         public Expression expression;
 
-        public VariableCreation(string identifier, Expression expression)
+        public VariableCreation(Type dataType, string identifier, Expression expression)
         {
+            this.dataType = dataType;
             this.identifier = identifier;
             this.expression = expression;
         }
@@ -55,11 +57,20 @@ namespace GfnCompiler
             this.identifier = identifier;
             this.parameters = parameters;
         }
+    }
 
-        /*public static explicit operator FunctionCall(Expression v)
+    public class FunctionDefinition : Statement
+    {
+        public string identifier;
+        public string returnType;
+        public Statement body;
+
+        public FunctionDefinition(string identifier, string returnType, Statement body)
         {
-            throw new NotImplementedException();
-        }*/
+            this.identifier = identifier;
+            this.returnType = returnType;
+            this.body = body;
+        }
     }
 
     public abstract class Expression
